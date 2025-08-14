@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title id="page_title">{{db_document.title}}</title>
+    </head>
+    <body>
+        <form>
+          <input
+            id="title"
+            name="title"
+            value="{{db_document.title}}"></input>
+        </form>
+        <h2>Your ID: <span id="ws_id"></span></h2>
+        <h2>Document ID: <span id="document_id">{{db_document.id}}</span></h2>
+        <form>
+          <textarea
+            id="content"
+            name="content"
+            form="document_form"
+            rows=10
+            cols=50>{{db_document.content}}</textarea>
+        </form>
+        <script>
+            var document_id = document.querySelector("#document_id").textContent;
+            var client_id = Date.now();
+            document.querySelector("#ws_id").textContent = client_id;
+
+            const ws = new WebSocket(`ws://localhost:8000/documents/ws/${document_id}`);
+            const textarea = document.getElementById("content");
+
+            ws.onopen = () => { console.log("Connected!") };
+
+            textarea.addEventListener("input", () => {
+              const message = {
+                type: "edit",
+                content: textarea.value
+              };
+              console.log(message)
+              ws.send(JSON.stringify(message));
+            });
+
+            textarea.addEventListener("change", updateContent);
+
+            function updateContent(event) {
+              const xhr = new XMLHttpRequest();
+              const url = `/documents/${document_id}`;
+              xhr.open("PATCH", url);
+              xhr.setRequestHeader("Content-Type", "application/json");
+
+              const data = { content: event.target.value };
+
+              xhr.onload = function() {
+                if (xhr.status === 200) {
+                  console.log("Content updated successfully");
+                } else {
+                  console.error("Error updating title:", xhr.statusText);
+                }
+              };
+
+              xhr.send(JSON.stringify(data));
+            };
+
+            ws.onmessage = (event) => {
+              const data = JSON.parse(event.data);
+              console.log(data)
+              if (data.type === "edit") {
+                // Avoid overwriting local typing if you implement OT/CRDT later
+                textarea.value = data.content;
+              }
+            };
+
+            const titleField = document.getElementById("title");
+            titleField.addEventListener("change", updateTitle);
+
+            function updateTitle(event) {
+              const xhr = new XMLHttpRequest();
+              const url = `/documents/${document_id}`;
+              xhr.open("PATCH", url);
+              xhr.setRequestHeader("Content-Type", "application/json");
+
+              const data = { title: event.target.value };
+
+              xhr.onload = function() {
+                if (xhr.status === 200) {
+                  console.log("Title updated successfully");
+                } else {
+                  console.error("Error updating title:", xhr.statusText);
+                }
+              };
+
+              xhr.send(JSON.stringify(data));
+              document.getElementById("page_title").textContent =  event.target.value;
+            };
+        </script>
+    </body>
+</html>

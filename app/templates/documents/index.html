@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Documents</title>
+    </head>
+    <body>
+        <form action="/documents" method="post">
+          <button type="Submit">Create document</button>
+        </form>
+        <h1>Documents</h1>
+        <ul id='documents'>
+          {% for document in documents %}
+            <li>
+              <a href="{{ url_for('get_document', document_id=document.id) }}">{{document.title}}</a>
+            </li>
+          {% endfor %}
+        </ul>
+    </body>
+</html>
